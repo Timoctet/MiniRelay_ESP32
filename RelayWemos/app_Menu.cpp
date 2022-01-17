@@ -224,7 +224,28 @@ void Page_HandleIndex(void)
                   }
                   
                   break;
+                  
+            //-----------------------------------------
+            case Page_SetTime:
 
+                
+                  switch(Pages[CurrentPage].getIndex())
+                  {
+                      case Index_SetTime_SetHour:
+                          Pages[CurrentPage].setIndex(Index_SetTime_SetMinutes);
+                          break;
+                          
+                      case Index_SetTime_SetMinutes:
+                          Pages[CurrentPage].setIndex(Index_SetTime_SetSeconds);
+                          break;
+                          
+                      case Index_SetTime_SetSeconds:
+                          DS3231_set(&ModifyTime);
+                          CurrentPage = Page_Menu;
+                          break;
+                  }
+                  
+                  break;
 
             //-----------------------------------------      
             case Page_Monitor:

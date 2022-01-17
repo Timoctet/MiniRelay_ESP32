@@ -1,5 +1,14 @@
+/**********************************************************************************
+ **********************************************************************************
+        @date       17/01/2022
+        @Dev        Duclos Timothe
+        @file       RelayWemos.ino
+*/
 
 
+/********************************************************************************** 
+ *  Includes
+ */
 #include "app_Menu.h"
 #include "drv_SSD1306.h"
 #include "drv_DS3231.h"
@@ -13,31 +22,52 @@
 
 #include "drv_AT24C256.h"
 
-AT24C256 eeprom (0x50);
-
-const char* ssid     = "TimoTest";
-const char* password = "12345678";
-
-AsyncWebServer server(80);
 
 
+/********************************************************************************** 
+ *  Define
+ */
+#define PUSHBUTTON_PIN     17
+#define PIN_RELAY          27
 
-#define PUSHBUTTON_PIN  17
-#define PUSHBUTTON_ISUSEISR  true
-#define PUSHBUTTON_LOGIC  false
 
- Push_Button PushButton1(PUSHBUTTON_PIN, PUSHBUTTON_ISUSEISR, PUSHBUTTON_LOGIC);
+/********************************************************************************** 
+ *  Private function prototype
+ */
 static void BTN_Interrupt();
 
 
-static void BTN_Interrupt()
-{
-  PushButton1.ISR_Func();
-}
+/********************************************************************************** 
+ *  Variables
+ */
+
+ /**
+  * @brief  Push Button
+  */
 
 
-#define PIN_BTN      17 // 17
-#define PIN_RELAY    27 // 27
+AT24C256 eeprom (0x50);   // Memoire EEPROM 
+
+/*
+ * Nom et mot de passe du point d'acces
+ */
+const char* ssid     = "TimoTest";
+const char* password = "12345678";
+
+AsyncWebServer server(80);  // Serveur
+
+/**
+ * Push button
+ */
+Push_Button PushButton1 (   PUSHBUTTON_PIN,     // Pin
+                            true,   // ISR
+                            false   // Logic
+                        );
+
+
+
+
+
 
 String Relay_ON(void)
 {
@@ -82,7 +112,6 @@ void SetAlarmOFF(DS3231_Time_s *pTime)
 
 void setup() {
   // put your setup code here, to run once:
-  pinMode(PIN_BTN ,   INPUT_PULLUP);
   pinMode(PIN_RELAY , OUTPUT);
 
   attachInterrupt(digitalPinToInterrupt(PUSHBUTTON_PIN), BTN_Interrupt, CHANGE);
@@ -111,13 +140,12 @@ void setup() {
                 { request->send_P(200, "text/plain", Relay_OFF().c_str()); }
             );
 
-/* server.on ("/RelayON", Relay_ON);
-
-  server.on ("/RelaySOFF", Relay_OFF);*/
-
   server.begin();
 }
 
+/**
+ * @brief   Main Loop
+ */
 void loop()
 {
    Page_Draw();
@@ -134,4 +162,18 @@ void loop()
 
 
   delay(2);
+}
+
+
+
+
+/********************************************************************************** 
+ *  Private function definition
+ */
+/**
+ * @brief Fonction d'interruption du push bouton
+ */
+static void BTN_Interrupt()
+{
+  PushButton1.ISR_Func();
 }
