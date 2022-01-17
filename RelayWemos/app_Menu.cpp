@@ -11,6 +11,9 @@
 
 #include "drv_Encodeur.h"
 #include "drv_SSD1306.h"
+#include "drv_DS3231.h"
+
+
 
 /********************************************************************************** 
  *  Définition des constantes privées
@@ -26,19 +29,30 @@
  */
 
 
-
 /**
   *   @brief    Liste des Menus
   */
 typedef enum
 {
-  Index_Menu_ = 0,
-  Index_Monitpr,
+  Index_Menu_SetTime = 0,
+  Index_Menu_SetAlarmON,
+  Index_Menu_SetAlarmOFF,
+  Index_Menu_Monitor,
 
   nb_Index_Menu
   
 }IndexMenu_Liste_e;
 
+
+typedef enum
+{
+    Index_SetTime_SetHour,
+    Index_SetTime_SetMinutes,
+    Index_SetTime_SetSeconds,
+    
+    nb_Index_SetTime
+    
+}Index_SetTime_e;
 
  
 /********************************************************************************** 
@@ -46,17 +60,69 @@ typedef enum
  */
 static void Screen_MenuDraw           (uint32_t *pParam);
 static void Screen_Monitor            (uint32_t *pParam);
+static void Screen_SetTimeDraw        (uint32_t *pParam);
+static void Screen_SetAlarmOnDraw     (uint32_t *pParam);
+static void Screen_SetAlarmOffDraw    (uint32_t *pParam);
 
 /********************************************************************************** 
  *  Définition des variables privée
  */
+static DS3231_Time_s ModifyTime;    // Variable temporaire qui servira à modifier l'heure
+
+ 
 static Screen Pages[nb_Pages] {
                                   // Page_Menu
                                   Screen(nb_Index_Menu-1, &Screen_MenuDraw, true),
 
+                                  Screen(nb_Index_SetTime, &Screen_SetTimeDraw,     false),
+                                  Screen(nb_Index_SetTime, &Screen_SetAlarmOnDraw,  false),
+                                  Screen(nb_Index_SetTime, &Screen_SetAlarmOffDraw, false),
+
                                   // Page_Remplir_Remplissage
                                   Screen(0, &Screen_Monitor, true),
 };
+
+
+
+static void Screen_SetTimeDraw(uint32_t *pParam)
+{
+    char message[30];
+
+    if(Pages[Page_SetTime].IsInit == false)
+    {
+        DS3231_get(&ModifyTime);
+        Pages[Page_SetTime].IsInit = true;
+    }
+    
+    // Effacement du display
+    SSD1306_ClearDisplay();
+
+    // Ecriture du titre
+    SSD1306_DrawString( (char *)"Set Time", 45, 0, 1);
+
+    snprintf(message, 9, "%02d:%02d:%02d", ModifyTime.hour, ModifyTime.min, ModifyTime.sec);
+    
+    // Ecriture des menus
+    SSD1306_DrawString( message, 0, 25, 2);
+
+    // Refresh du display
+    SSD1306_Display();
+    
+}
+
+
+
+static void Screen_SetAlarmOnDraw     (uint32_t *pParam)
+{
+  
+}
+
+static void Screen_SetAlarmOffDraw    (uint32_t *pParam)
+{
+  
+}
+
+
 
 
  
@@ -89,11 +155,41 @@ void Page_Draw(void)
 
 
 
+
 /**
   *   @brief    Dessin de la page en cours
   */
 void Page_HandleIndex(void)
 {
+    static uint8_t old_CurrentPage = 0;
+
+    // Check si on a besoin de configurer l'index
+    if(CurrentPage == Page_SetTime)
+    {
+          if(Pages[CurrentPage].getIndex() == Index_SetTime_SetHour)
+          {
+              Pages[CurrentPage].Configure_pIndex(&ModifyTime.hour, 23);
+          }
+          else
+          {
+              Pages[CurrentPage].Configure_pIndex(&ModifyTime.min, 59);
+          }
+    }
+
+    else if(CurrentPage == Page_SetAlarmON)
+    {
+          if(Pages[CurrentPage].getIndex() == Index_SetTime_SetHour)
+          {
+              Pages[CurrentPage].Configure_pIndex(&ModifyTime.hour, 23);
+          }
+          else
+          {
+              Pages[CurrentPage].Configure_pIndex(&ModifyTime.min, 59);
+          }
+    }
+    
+    
+
 
     // Encodeur
     Pages[CurrentPage].HandleIndex();
@@ -108,13 +204,40 @@ void Page_HandleIndex(void)
             //-----------------------------------------
             case Page_Menu:
 
+                  switch(Pages[CurrentPage].getIndex())
+                  {
+                      case Index_Menu_SetTime:
+                          CurrentPage = Page_SetTime;
+                          break;
+                          
+                      case Index_Menu_SetAlarmON:
+                          CurrentPage = Page_SetAlarmON;
+                          break;
+                          
+                      case Index_Menu_SetAlarmOFF:
+                          CurrentPage = Page_SetAlarmOFF;
+                          break;
+                          
+                      case Index_Menu_Monitor:
+                          CurrentPage = Page_Monitor;
+                          break;
+                  }
+                  
                   break;
 
 
             //-----------------------------------------      
             case Page_Monitor:
+                  CurrentPage = Page_Menu;
                   break;
         }
+    }
+
+
+    if(old_CurrentPage != CurrentPage)
+    {
+      Pages[CurrentPage].RaZScreen();
+      old_CurrentPage = CurrentPage;
     }
 }
 
@@ -138,8 +261,10 @@ static void Screen_MenuDraw(uint32_t *pParam)
      * @brief   Liste et nom des menus
      */
     static const char Menu_Name[nb_Index_Menu][MENU_NOM_TAILLE_MAX] = {
-                        "Remplir", 
-                        "Monitor" 
+                        "Set time",
+                        "alarm ON",
+                        "alarm OFF",
+                        "Monitor"
     };
 
     // Effacement du display
@@ -168,7 +293,7 @@ static void Screen_Monitor            (uint32_t *pParam)
     // Effacement du display
     SSD1306_ClearDisplay();
     
-    // Ecriture des menus
+    SSD1306_DrawString( (char *)"Monitor", 45, 0, 1);
 
     // Refresh du display
     SSD1306_Display();

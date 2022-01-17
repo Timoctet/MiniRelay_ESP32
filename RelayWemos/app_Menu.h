@@ -19,8 +19,12 @@
 typedef enum
 {
   Page_Menu = 0,
+  
+  Page_SetTime,
+  Page_SetAlarmON,
+  Page_SetAlarmOFF,
   Page_Monitor,
-
+  
   nb_Pages
   
 }PagesListe_e;
