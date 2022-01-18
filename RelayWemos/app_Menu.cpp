@@ -12,7 +12,7 @@
 #include "drv_Encodeur.h"
 #include "drv_SSD1306.h"
 #include "drv_DS3231.h"
-
+#include "app_Alarm.h"
 
 
 /********************************************************************************** 
@@ -86,7 +86,7 @@ static Screen Pages[nb_Pages] {
 
 static void Screen_SetTimeDraw(uint32_t *pParam)
 {
-    char message[30];
+    char message[30] = {0};
 
     if(Pages[Page_SetTime].IsInit == false)
     {
@@ -114,12 +114,52 @@ static void Screen_SetTimeDraw(uint32_t *pParam)
 
 static void Screen_SetAlarmOnDraw     (uint32_t *pParam)
 {
-  
+    char message[30] = {0};
+
+    if(Pages[Page_SetAlarmON].IsInit == false)
+    {
+        GetAlarmON(&ModifyTime);
+        Pages[Page_SetAlarmON].IsInit = true;
+    }
+    
+    // Effacement du display
+    SSD1306_ClearDisplay();
+
+    // Ecriture du titre
+    SSD1306_DrawString( (char *)"Al oN", 45, 0, 1);
+
+    snprintf(message, 9, "%02d:%02d:%02d", ModifyTime.hour, ModifyTime.min, ModifyTime.sec);
+    
+    // Ecriture des menus
+    SSD1306_DrawString( message, 0, 25, 2);
+
+    // Refresh du display
+    SSD1306_Display();
 }
 
 static void Screen_SetAlarmOffDraw    (uint32_t *pParam)
 {
-  
+    char message[30] = {0};
+
+    if(Pages[Page_SetAlarmOFF].IsInit == false)
+    {
+        GetAlarmOFF(&ModifyTime);
+        Pages[Page_SetAlarmOFF].IsInit = true;
+    }
+    
+    // Effacement du display
+    SSD1306_ClearDisplay();
+
+    // Ecriture du titre
+    SSD1306_DrawString( (char *)"Al oFF", 45, 0, 1);
+
+    snprintf(message, 9, "%02d:%02d:%02d", ModifyTime.hour, ModifyTime.min, ModifyTime.sec);
+    
+    // Ecriture des menus
+    SSD1306_DrawString( message, 0, 25, 2);
+
+    // Refresh du display
+    SSD1306_Display();
 }
 
 
@@ -164,7 +204,10 @@ void Page_HandleIndex(void)
     static uint8_t old_CurrentPage = 0;
 
     // Check si on a besoin de configurer l'index
-    if(CurrentPage == Page_SetTime)
+    if  (     (CurrentPage == Page_SetTime)
+          ||  (CurrentPage == Page_SetAlarmON)
+          ||  (CurrentPage == Page_SetAlarmOFF)
+        )
     {
           if(Pages[CurrentPage].getIndex() == Index_SetTime_SetHour)
           {
@@ -175,20 +218,6 @@ void Page_HandleIndex(void)
               Pages[CurrentPage].Configure_pIndex(&ModifyTime.min, 59);
           }
     }
-
-    else if(CurrentPage == Page_SetAlarmON)
-    {
-          if(Pages[CurrentPage].getIndex() == Index_SetTime_SetHour)
-          {
-              Pages[CurrentPage].Configure_pIndex(&ModifyTime.hour, 23);
-          }
-          else
-          {
-              Pages[CurrentPage].Configure_pIndex(&ModifyTime.min, 59);
-          }
-    }
-    
-    
 
 
     // Encodeur
@@ -247,6 +276,58 @@ void Page_HandleIndex(void)
                   
                   break;
 
+                  
+                  
+            //-----------------------------------------
+            case Page_SetAlarmON:
+
+                  switch(Pages[CurrentPage].getIndex())
+                  {
+                      case Index_SetTime_SetHour:
+                          Pages[CurrentPage].setIndex(Index_SetTime_SetMinutes);
+                          break;
+                          
+                      case Index_SetTime_SetMinutes:
+                          Pages[CurrentPage].setIndex(Index_SetTime_SetSeconds);
+                          break;
+                          
+                      case Index_SetTime_SetSeconds:
+                          SetAlarmON(&ModifyTime);
+                          CurrentPage = Page_Menu;
+                          break;
+
+                      default:
+                          Pages[CurrentPage].setIndex(Index_SetTime_SetHour);
+                          break;
+                  }
+                  
+                  break;
+
+            //-----------------------------------------
+            case Page_SetAlarmOFF:
+
+                  switch(Pages[CurrentPage].getIndex())
+                  {
+                      case Index_SetTime_SetHour:
+                          Pages[CurrentPage].setIndex(Index_SetTime_SetMinutes);
+                          break;
+                          
+                      case Index_SetTime_SetMinutes:
+                          Pages[CurrentPage].setIndex(Index_SetTime_SetSeconds);
+                          break;
+                          
+                      case Index_SetTime_SetSeconds:
+                          SetAlarmOFF(&ModifyTime);
+                          CurrentPage = Page_Menu;
+                          break;
+
+                      default:
+                          Pages[CurrentPage].setIndex(Index_SetTime_SetHour);
+                          break;
+                  }
+                  
+                  break;
+
             //-----------------------------------------      
             case Page_Monitor:
                   CurrentPage = Page_Menu;
@@ -257,7 +338,7 @@ void Page_HandleIndex(void)
 
     if(old_CurrentPage != CurrentPage)
     {
-      Pages[CurrentPage].RaZScreen();
+      Pages[old_CurrentPage].RaZScreen();
       old_CurrentPage = CurrentPage;
     }
 }

@@ -18,9 +18,9 @@
 #include "WiFi.h"
 #include "ESPAsyncWebServer.h"
 #include "drv_BTN.h"
+#include "app_Alarm.h"
 
-
-#include "drv_AT24C256.h"
+//#include "drv_AT24C256.h"
 
 
 
@@ -40,14 +40,6 @@ static void BTN_Interrupt();
 /********************************************************************************** 
  *  Variables
  */
-
- /**
-  * @brief  Push Button
-  */
-
-
-AT24C256 eeprom (0x50);   // Memoire EEPROM 
-
 /*
  * Nom et mot de passe du point d'acces
  */
@@ -86,28 +78,7 @@ String Relay_OFF(void)
 }
 
 
-void GetAlarmON(DS3231_Time_s *pTime)
-{
-  eeprom.read(0, (uint8_t*)pTime, sizeof(pTime));
-}
-
-void GetAlarmOFF(DS3231_Time_s *pTime)
-{
-  eeprom.read(10, (uint8_t*)pTime, sizeof(pTime));
-}
-
-
-
-void SetAlarmON(DS3231_Time_s *pTime)
-{
-  eeprom.write(0, (uint8_t*)pTime, sizeof(pTime));
-}
-
-void SetAlarmOFF(DS3231_Time_s *pTime)
-{
-  eeprom.write(10, (uint8_t*)pTime, sizeof(pTime));
-}
-
+DS3231_Time_s RaZTime = {0};
 
 
 void setup() {
